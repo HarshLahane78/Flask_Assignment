@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Manager</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            width: 200px;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-4">Book Manager</h1>
+
+        <h2 class="mt-4">Books</h2>
+        <table class="table">
+            <thead class="thead-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Author</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="bookList">
+                <!-- Book items will be inserted here dynamically -->
+            </tbody>
+        </table>
+
+        <h2 class="mt-4">Add New Book</h2>
+        <form id="addBookForm">
+            <div class="form-group">
+                <label for="title">Title:</label>
+                <input type="text" class="form-control" id="title" name="title" required>
+            </div>
+            <div class="form-group">
+                <label for="author">Author:</label>
+                <input type="text" class="form-control" id="author" name="author" required>
+            </div>
+            <button type="submit" class="btn btn-success">Add Book</button>
+        </form>
+    </div>
+
+    <script>
+        // Function to fetch and display books
+        function fetchBooks() {
+            fetch('/books')
+            .then(response => response.json())
+            .then(books => {
+                const bookList = document.getElementById('bookList');
+                bookList.innerHTML = '';
+                books.forEach(book => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${book.id}</td>
+                        <td>${book.title}</td>
+                        <td>${book.author}</td>
+                        <td>
+                            <button class="btn btn-primary mr-2" onclick="editBook(${book.id})">Edit</button>
+                            <button class="btn btn-danger" onclick="deleteBook(${book.id})">Delete</button>
+                        </td>
+                    `;
+                    bookList.appendChild(tr);
+                });
+            });
+        }
+
+        // Function to handle form submission for adding a new book
+        document.getElementById('addBookForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            const newBook = {
+                title: formData.get('title'),
+                author: formData.get('author')
+            };
+            fetch('/books', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(newBook)
+            })
+            .then(response => response.json())
+            .then(() => {
+                // Fetch and display updated book list
+                fetchBooks();
+                // Clear the form fields
+                document.getElementById('addBookForm').reset();
+            });
+        });
+
+        // Function to delete a book
+        function deleteBook(bookId) {
+            fetch(`/books/${bookId}`, {
+                method: 'DELETE'
+            })
+            .then(() => {
+                // Fetch and display updated book list
+                fetchBooks();
+            });
+        }
+
+        // Function to edit a book
+        function editBook(bookId) {
+            const title = prompt('Enter new title:');
+            const author = prompt('Enter new author:');
+            if (title && author) {
+                const updatedBook = { title, author };
+                fetch(`/books/${bookId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updatedBook)
+                })
+                .then(() => {
+                    // Fetch and display updated book list
+                    fetchBooks();
+                });
+            }
+        }
+
+        // Fetch books when the page loads
+        fetchBooks();
+    </script>
+</body>
+</html>
